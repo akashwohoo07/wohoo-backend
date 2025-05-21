@@ -9,6 +9,15 @@ const cookieParser = require('cookie-parser');
 // Initialize app
 const app = express();
 
+// Set NODE_ENV if not set
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+}
+
+// Log environment for debugging
+console.log('Environment:', process.env.NODE_ENV);
+console.log('Client URL:', process.env.CLIENT_URL);
+
 // Load passport config
 require('./config/passport')(passport);
 
@@ -31,7 +40,8 @@ const connectDB = async () => {
       console.log('MongoDB connected');
     } catch (error) {
       console.error('MongoDB connection error:', error);
-      process.exit(1);
+      // Don't exit process in serverless environment
+      // process.exit(1);
     }
   }
 };
