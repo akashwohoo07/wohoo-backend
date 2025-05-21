@@ -1,4 +1,4 @@
-// backend/server.js
+// index.js - Vercel Serverless Entry Point
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -8,7 +8,6 @@ const cookieParser = require('cookie-parser');
 
 // Initialize app
 const app = express();
-const PORT = process.env.PORT || 5001;
 
 // Load passport config
 require('./config/passport')(passport);
@@ -17,17 +16,28 @@ require('./config/passport')(passport);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: process.env.CLIENT_URL || '*',
   credentials: true
 }));
 
 // Initialize passport
 app.use(passport.initialize());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URL)
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
+// Connect to MongoDB - only connect if not already connected
+const connectDB = async () => {
+  if (mongoose.connection.readyState === 0) {
+    try {
+      await mongoose.connect(process.env.MONGO_URL);
+      console.log('MongoDB connected');
+    } catch (error) {
+      console.error('MongoDB connection error:', error);
+      process.exit(1);
+    }
+  }
+};
+
+// Call connectDB but don't wait for it to complete (serverless optimization)
+connectDB();
 
 // Mount routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -37,7 +47,5 @@ app.get('/', (req, res) => {
   res.send('Travel App API is running');
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Vercel specific: Export the Express app as the default module
+module.exports = app;
